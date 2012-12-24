@@ -802,6 +802,103 @@ test("delete at the end", function() {
     assertConsistency(dv);
 });
 
+module("delta");
+
+test("add item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([]);
+	dv.addItem({id:05,val:0});
+	var added = dv.getDelta().added;
+	equal(added.length, 1, "added item count in delta");
+	same(added[0], {id:05,val:0}, "added item in delta");	
+});
+
+test("update item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05, val:0}]);
+	dv.updateItem(05, {id:05, val:1});
+	var updated = dv.getDelta().updated;
+	equal(updated.length, 1, "updated item count in delta");
+	same(updated[0], {id:05, val:1}, "updated item in delta");	
+});
+
+test("delete item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05, val:0}]);
+	dv.deleteItem(05);
+	var deleted = dv.getDelta().deleted;
+	equal(deleted.length, 1, "deleted item count in delta");
+	same(deleted[0], "5", "deleted item in delta");	
+});
+
+test("add then update item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([]);
+	dv.addItem({id:05,val:0});
+	dv.updateItem(05, {id:05,val:1});
+	var delta = dv.getDelta();
+	equal(delta.added.length, 1, "in added item");	
+	same(delta.added[0], {id:05,val:1}, "in added item");	
+	equal(delta.updated.length, 0, "not in updated item");	
+});
+
+test("update then update item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05,val:0}]);
+	dv.updateItem(05, {id:05,val:1});
+	dv.updateItem(05, {id:05,val:2});
+	var delta = dv.getDelta();
+	equal(delta.updated.length, 1, "only 1 in updated item");	
+	same(delta.updated[0], {id:05,val:2}, "in updated item");	
+});
+
+test("add then delete item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([]);
+	dv.addItem({id:05,val:0});
+	dv.deleteItem(05);
+	var delta = dv.getDelta();
+	equal(delta.added.length, 0, "not in added item");	
+	equal(delta.deleted.length, 0, "not in deleted item");	
+});
+
+test("update then delete item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05,val:0}]);
+	dv.updateItem(05, {id:05,val:1});
+	dv.deleteItem(05);
+	var delta = dv.getDelta();
+	equal(delta.updated.length, 0, "not in updated item");	
+	equal(delta.deleted.length, 0, "not in deleted item");	
+});
+
+test("insert item", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([]);
+	dv.insertItem(0, {id:05,val:0});
+	var added = dv.getDelta().added;
+	equal(added.length, 1, "added item count in delta");
+	same(added[0], {id:05,val:0}, "added item in delta");
+});
+
+test("set items should reset delta", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05, val:0}]);
+	dv.deleteItem(05);
+	dv.setItems([]);
+	var deleted = dv.getDelta().deleted;
+	equal(deleted.length, 0, "delta should be reset");
+});
+
+test("reset delta", function() {
+	var dv = new Slick.Data.DataView();
+	dv.setItems([{id:05, val:0}]);
+	dv.deleteItem(05);
+	dv.resetDelta();
+	var deleted = dv.getDelta().deleted;
+	equal(deleted.length, 0, "delta should be reset");
+});
+
 // TODO: paging
 // TODO: combination
 

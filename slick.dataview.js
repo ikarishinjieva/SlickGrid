@@ -768,6 +768,79 @@
       this.onRowCountChanged.subscribe(update);
     }
 
+	var getDelta, resetDelta;
+	(function registerDeltaFn(self) {
+		var delta;	
+		function keys(obj) {
+			var keys = [];
+			$.each(obj, function(key, value) {
+				keys.push(key);
+			});
+			return keys;
+		}
+		
+		function values(obj) {
+			var values = [];
+			$.each(obj, function(key, value) {
+				values.push(value);
+			});
+			return values;		
+		}
+		
+		getDelta = function() {
+			return {
+				added : values(delta.added),
+				updated : values(delta.updated),
+				deleted : keys(delta.deleted)
+			};
+		}		
+		
+		resetDelta = function() {
+			delta = {added:{}, updated:{}, deleted:{}};
+		}				
+		resetDelta();		
+		
+		var _addItem = addItem;
+		addItem = function(item) {
+			_addItem(item);
+			delta.added[item[idProperty]] = item;
+		}
+		
+		var _insertItem = insertItem;
+		insertItem = function(insertBefore, item) {
+			_insertItem(insertBefore, item);
+			delta.added[item[idProperty]] = item;			
+		}
+		
+		var _updateItem = updateItem;
+		updateItem = function(id, item) {
+			_updateItem(id, item);
+			if (null != delta.added[id]) {
+				delta.added[id] = item;
+			} else {
+				delta.updated[id] = item;
+			}			
+		}
+		
+		var _deleteItem = deleteItem;
+		deleteItem = function(id) {
+			_deleteItem(id);
+			if (null != delta.added[id]) {
+				delete delta.added[id];
+			} else if (null != delta.updated[id]) {
+				delete delta.updated[id];
+			} else {
+				delta.deleted[id] = true;
+			}
+		}
+		
+		var _setItems = setItems;
+		setItems = function(data, objectIdProperty) {
+			_setItems(data, objectIdProperty);
+			resetDelta();
+		}
+	})(self);
+	
     return {
       // methods
       "beginUpdate": beginUpdate,
@@ -805,6 +878,10 @@
       "getLength": getLength,
       "getItem": getItem,
       "getItemMetadata": getItemMetadata,
+	  
+	  //delta
+	  "getDelta": getDelta,
+	  "resetDelta": resetDelta,
 
       // events
       "onRowCountChanged": onRowCountChanged,
